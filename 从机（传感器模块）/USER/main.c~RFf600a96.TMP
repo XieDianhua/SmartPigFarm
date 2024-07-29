@@ -1,0 +1,57 @@
+#include "led.h"
+#include "delay.h"
+#include "usart.h"
+#include "dht11.h"
+#include "z19b.h"
+#include "mq135.h"
+#include "myiic.h"
+#include "bh1750.h"
+
+ 
+int main(void)
+{	 
+	u8 t=0;		 
+	u8 temperature;//温度值 	    
+	u8 humidity;   //湿度值
+	u8 co2_value;	 //CO2值
+	u8 h2s_value;	 //H2S值
+	float sun_lx;		 //光照强度值
+
+	delay_init();	    	 //延时函数初始化	  
+  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//设置中断优先级分组为组2：2位抢占优先级，2位响应优先级
+	uart_init(115200);	 	//串口1初始化为115200，用来显示
+	LED_Init();		  		//初始化与LED连接的硬件接口 
+	co2_uart_init(9600);//初始化CO2传感器
+	Adc_Init();         //初始化ADC
+	IIC_Init();					//初始化IIC接口
+	while(1)
+	{	    	    
+ 		if(t%10==0)			//每100ms读取一次
+		{									  
+			DHT11_Read_Data(&temperature,&humidity);	//读取温湿度值	
+			
+			co2_value=CO2_Get_Date();//获取CO2值
+			
+			h2s_value=Get_Average(ADC_Channel_1,10);//获取H2S值
+			
+			sun_lx =BH_Measure();//获取光照值
+			
+			printf("temperature=%d°C\r\n",temperature);//显示温度值
+			printf("humidity=%d%RH\r\n",humidity);		 //显示湿度值
+			printf("CO2浓度为=%d\r\n",co2_value);			 //显示C02值
+			printf("h2s=%d\r\n",h2s_value);								 //显示H2S值
+			printf("光照强度为=%f\r\n",sun_lx);				 //显示光强度值
+		}				   
+	 	delay_ms(100);//延时100ms
+		t++;
+		if(t==10)
+		{
+			t=0;
+			LED0=!LED0;
+		}
+	}
+}
+
+
+
+
